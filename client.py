@@ -26,9 +26,9 @@ def find_max(x,y):
 
 if __name__ == '__main__':
 
-    start_freq =2000
+    start_freq =4000
 
-    band_width =1000   
+    band_width =500   
 
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

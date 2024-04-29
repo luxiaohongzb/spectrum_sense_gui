@@ -17,9 +17,9 @@ addrs = socket.getaddrinfo(socket.gethostname(),None)
 
 # 同上仅获取当前IPV4地址
 
-addr_list = []
-for item in addrs:
-    if ':' not in item[4][0]:
-        addr_list.append(item[4][0])
+# addr_list = []
+# for item in addrs:
+#     if ':' not in item[4][0]:
+#         addr_list.append(item[4][0])
 
-return addr_list
+# return addr_list
