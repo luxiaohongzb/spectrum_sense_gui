@@ -13,6 +13,7 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
 from threading import Event
 import pyqtgraph as pg
+from plotWidget import CrosshairPlotWidget
 start_rec_event = Event()  # 默认False
 class DataReceiver(QThread):
     dataReceived = pyqtSignal(list)
@@ -99,7 +100,7 @@ class UDPReceiver(QMainWindow):
         text_monitor_layer.addWidget(self.data_edit)
         text_monitor_layer.addWidget(self.log_edit)
 
-        self.plot_widget = PlotWidget()
+        self.plot_widget = CrosshairPlotWidget()
         # self.plot_widget.setMinimumHeight(800)
         layout_plot.addWidget(self.plot_widget)
         # layout_plot.setContentsMargins(20,100,20,100)
@@ -186,15 +187,6 @@ class UDPReceiver(QMainWindow):
             self.logger_write("正在请求上位机，连通性测试中......")
         except Exception as e:
             self.logger_write(str(e))
-    # def addr_change_handler(self):
-    #     try:
-    #         self.udp_socket.close()
-    #         # 更改绑定的本地IP地址和端口
-    #         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #         self.udp_socket.bind((self.addr_combobox.currentText(),9999))
-    #         self.logger_write("UDP套接字重新绑定到 {}:{} 成功".format(self.addr_combobox.currentText(), 9999))
-    #     except Exception as e:
-    #         self.logger_write("UDP套接字重新绑定失败:"+str( e))
     def updateText(self, data):
         self.log_edit.append(data)
     def get_freq_range(self):
@@ -249,15 +241,6 @@ class UDPReceiver(QMainWindow):
         self.plot_freq = [*self.plot_freq,*_freq] 
         self.plot_power = [*self.plot_power,*_power]
 
-    #     try:
-    #         data, addr = self.udp_socket.recvfrom(1024)
-    #         self.text_edit.append(f"Received from {addr}: {data.decode('ISO-8859-1')}")
-    #         # 在这里更新图形
-    #         # 这里仅作示例，假设收到的数据是频率和功率的一对值
-    #         frequency, power = map(float, data.decode().split(','))
-    #         self.plot_widget.updatePlot(frequency, power)
-    #     except socket.error:
-    #         pass
     def logger_write(self,msg):
         self.log_edit.append(msg)
     def keyPressEvent(self, event):
@@ -268,84 +251,7 @@ class UDPReceiver(QMainWindow):
         self.udp_socket.close()
         event.accept()
 
-class PlotWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        # self.figure, self.ax = plt.subplots()
-        # self.canvas = FigureCanvas(self.figure)
-        # layout = QVBoxLayout()
-        # layout.addWidget(self.canvas)
-        # self.setLayout(layout)
 
-        # self.ax.set_xlabel('Frequency/MHz')
-        # # self.ax.set_ylabel('Power/dbm')
-        # 添加水平标尺
-        h_line = pg.InfiniteLine(pos=0, angle=0, movable=True)
-        # 添加垂直标尺
-        v_line = pg.InfiniteLine(pos=0, angle=90, movable=True)
-
-        self.x0 = 2200
-        self.x1 = 2400
-        self.plot_widget = QtWidgets.QWidget()  # 实例化一个widget部件作为K线图部件
-        
-        # self.plot_widget.setMinimumHeight(1500)
-        self.plot_layout = QtWidgets.QHBoxLayout() # 实例化一个网格布局层
-        
-        self.setLayout(self.plot_layout)  # 设置K线图部件的布局层
-        self.plot_plt = pg.PlotWidget()  # 实例化一个绘图部件
-        self.plot_plt.enableAutoRange(axis='y')
-
-        self.plot_plt.addItem(h_line)
-        self.plot_plt.addItem(v_line)
-        self.plot_plt.showGrid(x=False,y=True) # 显示图形网格
-        self.plot_layout.addWidget(self.plot_plt)  # 添加绘图部件到K线图部件的网格布局层
-        # 定义信号处理函数以更新标尺位置
-        def update_lines():
-            pw  = self.plot_plt
-            # print("111")
-            # x_range = pw.getViewBox().viewRange()[0]
-            # y_range = pw.getViewBox().viewRange()[1]
-            # x_center = np.mean(x_range)
-            # y_center = np.mean(y_range)
-            # x_diff = x_range[1] - x_range[0]
-            # y_diff = y_range[1] - y_range[0]
-            # h_line.setPos(y_center)
-            # v_line.setPos(x_center)
-        self.plot_plt.sigRangeChanged.connect(update_lines)
-    def set_range(self,x0,x1):
-        self.x0 = x0
-        self.x1 = x1
-    def get_range(self):
-        return self.x0 , self.x1
-
-    def updatePlot(self, frequency, power):
-        self.plot_plt.setXRange(self.get_range()[0],self.get_range()[1])
-        if len(frequency)==0 or len(power) ==  0:
-            return "none","none"
-        # 清除之前的图形
-        self.clearPlot()
-    
-        # self.plot_plt.setAutoRange(x=True)
-
-        # 更新折线
-        # self.line.set_xdata(np.append(self.line.get_xdata(),1))
-        # self.line.set_ydata(np.append(self.line.get_ydata(), 1))
-        self.plot_plt.plot().setData(frequency,power,pen='g')
-        # self.ax.plot(frequency, power)
-        max_x,max_y = find_max(frequency,power)
-        print("max freq value:"+str(max_y)+"db at "+str(max_x)+"MHz")
-        # 标出最高点及其数值
-        # plt.scatter(max_x, max_y, color='red', label=f'Max freq ({max_x:.2f}, {max_y:.2f})')
-        # plt.legend()
-        # 重新绘制
-        # self.canvas.draw()
-        return max_x,max_y
-    def clearPlot(self):
-        self.plot_plt.clear()
-        # self.ax.clear()
-        # self.ax.set_xlabel('Frequency')
-        # self.ax.set_ylabel('Power')
-        pass
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
