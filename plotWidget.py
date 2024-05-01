@@ -31,8 +31,8 @@ class CrosshairPlotWidget(QWidget):
         self.p2.setLabel(axis='left',text='功率/dbm')
         self.p2.setLabel(axis='bottom',text='频率/MHz') 
         self.win.setMinimumHeight(800)
-        self.freq = []
-        self.power = []
+        self.freq = [0]
+        self.power = [0]
         # 添加 LinearRegionItem
         self.region = pg.LinearRegionItem()
         self.region.setZValue(10)
@@ -53,6 +53,14 @@ class CrosshairPlotWidget(QWidget):
         self.bottomLabel = pg.LabelItem(justify='center')
         self.win.addItem(self.bottomLabel, row=3, col=0)
         self.bottomLabel.setText("频谱监控图")
+                # 显示网格
+        self.p1.showGrid(x=True, y=True)
+        self.p2.showGrid(x=True, y=True)
+
+        self.max_X = 0
+        self.max_Y= 0
+        self.x0 = -5
+        self.x1 = 5
         # 监听鼠标移动事件
         self.p1.scene().sigMouseMoved.connect(self.mouseMoved)
 
@@ -72,8 +80,9 @@ class CrosshairPlotWidget(QWidget):
         if self.p1.sceneBoundingRect().contains(pos):
             mousePoint = self.p1.vb.mapSceneToView(pos)
             index = int(mousePoint.x())
-            # if index > 0 and index < len(self.freq):
-            self.label.setText("<span style='font-size: 12pt'>freq:%0.1f,   <span style='color: red'>power:%0.1f</span>" % (mousePoint.x(), mousePoint.y()))
+            if index > self.freq[0] and index < self.freq[-1]:
+                self.label.setText("<span style='font-size: 12pt'>freq:%0.1f MHz,   <span style='color: red'>power:%0.1f dbm</span><br/><span style='font-size: 12pt'>freq:%d MHz,   <span style='color: red'>max power:%0.1f dbm</span>" % (index, self.power[index +1  - self.freq[0]],self.max_X,self.max_Y))
+        
             self.vLine.setPos(mousePoint.x())
             self.hLine.setPos(mousePoint.y())
 
@@ -84,7 +93,8 @@ class CrosshairPlotWidget(QWidget):
         self.p1.plot(freq, power ,pen="g")
         self.p2d = self.p2.plot(freq,power, pen="w")
         self.region.setClipItem(self.p2d)
-        self.region.setRegion([1000, 2000])
+        self.region.setRegion([self.max_X-25,self.max_X+25])
+        self.p2.setXRange(self.get_range()[0],self.get_range()[1])
 
     def update(self):
         region = self.region.getRegion()
@@ -98,6 +108,7 @@ class CrosshairPlotWidget(QWidget):
         self.clearPlot()
         self.setData(frequency,power)
         max_x,max_y = find_max(frequency,power)
+        self.max_X ,self.max_Y = max_x,max_y
         # print("max freq value:"+str(max_y)+"db at "+str(max_x)+"MHz")
         return max_x,max_y
     def clearPlot(self):

@@ -8,7 +8,7 @@ import queue
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5 import QtCore, QtGui, QtWidgets
-from util import send_scanning_spectrum_msg,read_second_byte,get_ip,is_socketed_connected,find_max
+from util import send_scanning_spectrum_msg,read_second_byte,get_ip,get_time
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
 from threading import Event
@@ -93,8 +93,10 @@ class UDPReceiver(QMainWindow):
 
         input_layout = QHBoxLayout()
         self.data_edit = QTextEdit()
+        self.data_edit.setReadOnly(True)
         # self.data_edit.setMaximumHeight(500)
         self.log_edit = QTextEdit()
+        self.log_edit.setReadOnly(True)
         # self.log_edit.setMaximumHeight(500)
         # self.text_edit.setFixedHeight(200)
         text_monitor_layer.addWidget(self.data_edit)
@@ -188,7 +190,7 @@ class UDPReceiver(QMainWindow):
         except Exception as e:
             self.logger_write(str(e))
     def updateText(self, data):
-        self.log_edit.append(data)
+        self.logger_write(data)
     def get_freq_range(self):
         return  int(self.freq_start_input.text()), int(self.freq_end_input.text())
     def hendle_end_signal(self,ctn):
@@ -208,10 +210,11 @@ class UDPReceiver(QMainWindow):
         try:
             (start_freq,end_freq) = self.get_freq_range()
             send_scanning_spectrum_msg((self.master_aadr.text(),int(self.master_port_input.text())), start_freq,end_freq)
+            self.logger_write("发送扫频指令，扫频频率范围为%d MHz ~ %d MHz"%(start_freq,end_freq))
             # self.send_button.setDisabled(True)
             self.plot_widget.set_range(start_freq,end_freq)
         except Exception as e:  
-            self.log_edit.append("Error: Invalid input" +str(e))
+            self.logger_write("Error: Invalid input" +str(e))
 
     def initSocket(self):
         start_rec_event.clear()
@@ -242,7 +245,7 @@ class UDPReceiver(QMainWindow):
         self.plot_power = [*self.plot_power,*_power]
 
     def logger_write(self,msg):
-        self.log_edit.append(msg)
+        self.log_edit.append("["+get_time()+"] "+msg)
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.close()
